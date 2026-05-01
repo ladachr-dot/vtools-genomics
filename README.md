@@ -11,7 +11,7 @@ This toolkit bridges the gap between raw genomic data and analytical tools like 
 
 This repository is structured as a modular package containing several dedicated tools:
 
-### ✅ 1. PGS to PLINK Converter & Calculator (`pgstoplink`)
+### ✅ 1. PGS to PLINK Converter & Calculator (`pgs_to_plink`)
 An interactive CLI module for processing Polygenic Risk Score (PGS) files.
 - **Multithreaded NCBI Fetching:** Automatically retrieves missing rsIDs based on `chr:pos` coordinates.
 - **VCF Integration:** Seamlessly converts patient `.vcf/.vcf.gz` files to PLINK binary format (`.bed/.bim/.fam`).

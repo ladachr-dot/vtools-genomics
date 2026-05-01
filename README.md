@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 
-A collection of high-performance Python utilities designed to streamline and automate routine genomic data processing workflows. 
+A collection of Python utilities designed to streamline and automate routine genomic data processing workflows. 
 
 This toolkit bridges the gap between raw genomic data and analytical tools like PLINK, handling everything from missing rsID recovery via NCBI APIs to safe genome build liftovers.
 

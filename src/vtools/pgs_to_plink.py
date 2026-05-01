@@ -39,6 +39,7 @@ import urllib.request
 import urllib.error
 import ssl
 import re
+import shutil
 import concurrent.futures
 from pathlib import Path
 from io import BytesIO
@@ -47,6 +48,7 @@ from io import BytesIO
 LIFTOVER_AVAILABLE = False
 PLINK_AVAILABLE = False
 MAX_ROWS = 10
+PLINK_CMD = "plink"
 
 ##########################################################
 # AUTO-INSTALLATION BLOCK
@@ -104,7 +106,11 @@ def check_and_install_dependencies():
     return all_ok
 
 def download_liftover_chain(chain_name):
-    """Downloads the liftover chain from UCSC."""
+    """Downloads the liftover chain from UCSC to the script's directory."""
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    chain_path = os.path.join(script_dir, chain_name)
+    
     if 'hg19ToHg38' in chain_name:
         url = f"http://hgdownload.cse.ucsc.edu/goldenpath/hg19/liftOver/{chain_name}"
     elif 'hg38ToHg19' in chain_name:
@@ -113,8 +119,8 @@ def download_liftover_chain(chain_name):
         print(f"❌ Unknown chain: {chain_name}")
         return False
 
-    if os.path.exists(chain_name):
-        size = os.path.getsize(chain_name)
+    if os.path.exists(chain_path):
+        size = os.path.getsize(chain_path)
         if size > 1000:
             print(f"✅ {chain_name} is already downloaded ({size:,} bytes)")
             return True
@@ -129,7 +135,7 @@ def download_liftover_chain(chain_name):
         total_size = int(resp.headers.get('content-length', 0))
         downloaded = 0
 
-        with open(chain_name, 'wb') as f:
+        with open(chain_path, 'wb') as f:
             for chunk in resp.iter_content(chunk_size=8192):
                 f.write(chunk)
                 downloaded += len(chunk)
@@ -138,17 +144,17 @@ def download_liftover_chain(chain_name):
                     percent = (downloaded / total_size) * 100
                     print(f"\r   Progress: {percent:.1f}% ({downloaded:,}/{total_size:,} bytes)", end='')
 
-        print(f"\n   ✅ Downloaded: {os.path.getsize(chain_name):,} bytes")
+        print(f"\n   ✅ Downloaded: {os.path.getsize(chain_path):,} bytes")
         return True
 
     except Exception as e:
         print(f"\n   ❌ Download error: {e}")
-        if os.path.exists(chain_name):
-            os.remove(chain_name)
+        if os.path.exists(chain_path):
+            os.remove(chain_path)
         return False
 
 def check_and_download_chains():
-    """Checks and downloads required liftover chains."""
+    """Checks for chains locally, searches the PC, or downloads if missing."""
     print("=" * 60)
     print("🔗 CHECKING LIFTOVER CHAINS")
     print("=" * 60)
@@ -158,13 +164,30 @@ def check_and_download_chains():
         'hg38ToHg19.over.chain.gz'
     ]
 
+    root_path = 'C:\\' if os.name == 'nt' else '/'
     all_ok = True
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
     for chain in chains:
-        if not download_liftover_chain(chain):
-            all_ok = False
+        chain_path = os.path.join(script_dir, chain)
+        if os.path.exists(chain) and os.path.getsize(chain) > 1000:
+            print(f"   ✅ {chain} is already in the current directory.")
+            continue
+            
+        print(f"   ⚠️ {chain} not found locally. Initiating search...")
+        found_path = find_file(chain, root_path)
+        
+        if found_path:
+            print(f"   📋 Copying {chain} to current directory...")
+            shutil.copy(found_path, chain)
+        else:
+            print(f"   ❌ Failed to copy: {e}")
+            if not download_liftover_chain(chain):
+                all_ok = False
 
     if not all_ok:
-        print("\n❌ Not all chains were downloaded!")
+        print("\n❌ Not all chains were downloaded or found!")
         return False
 
     print()
@@ -172,7 +195,32 @@ def check_and_download_chains():
 
 
 def setup_environment():
-    """Full environment setup."""
+    """Full environment setup with a silent pre-check to avoid unnecessary logs."""
+    global LiftOver, LIFTOVER_AVAILABLE
+    
+    # --- 1. SILENT PRE-CHECK ---
+    env_ready = True
+    try:
+        __import__('requests')
+        __import__('pandas')
+        __import__('pyliftover')
+    except ImportError:
+        env_ready = False
+        
+    chains = [
+        'hg19ToHg38.over.chain.gz',
+        'hg38ToHg19.over.chain.gz'
+    ]
+    for chain in chains:
+        if not os.path.exists(chain) or os.path.getsize(chain) < 1000:
+            env_ready = False
+            
+    if env_ready:
+        from pyliftover import LiftOver
+        LIFTOVER_AVAILABLE = True
+        return True
+        
+    # --- 2. VERBOSE SETUP ---
     print("\n" + "=" * 60)
     print("🚀 SETTING UP ENVIRONMENT")
     print("=" * 60 + "\n")
@@ -720,7 +768,7 @@ def display_snp_options(snp_list, chrom, pos):
             sig_icon = "🟢"
         elif 'uncertain' in str(clin_sig).lower() or 'conflicting' in str(clin_sig).lower():
             sig_icon = "🟡"
-        elif 'not provided' in str(clin_sig).lower() or 'не указана' in str(clin_sig):
+        elif 'not provided' in str(clin_sig).lower():
             sig_icon = "⚪"
         else:
             sig_icon = "🔵"
@@ -732,11 +780,15 @@ def display_snp_options(snp_list, chrom, pos):
 
     print(f"   {'─' * 50}")
     print(f"   [0] Skip (do not assign rsID)")
-    print(f"   [A] Auto-select (newest)")
+    print(f"   [A] Auto-select this one (newest)")
+    print(f"   [ALL] SWITCH TO AUTO MODE FOR EVERYTHING")
     print(f"   {'─' * 50}")
 
     while True:
-        choice = input(f"   Your choice (0-{len(snp_list)} or A): ").strip().upper()
+        choice = input(f"   Your choice: ").strip().upper()
+
+        if choice == 'ALL':
+            return 'AUTO'
 
         if choice == 'A':
             def rs_number(snp):
@@ -931,16 +983,30 @@ def alternative(filepath, genome_build, skip_lines):
 
         max_workers = 5 if auto_mode else 1
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {executor.submit(process_single_snp, t): t for t in tasks}
-            
-            for future in concurrent.futures.as_completed(futures):
-                i, rsid = future.result()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            for i in unprocessed_indices:
+                chrom = str(df.at[i, 'chr_name'])
+                pos_hg38 = str(df.at[i, 'chr_position_hg38'])
+                pos_hg19 = str(df.at[i, 'chr_position_hg19_original'])
+                
+                # Если авто-режим, то 5 потоков, если интерактивный - ждем ответа
+                if auto_mode:
+                    rsid = find_rsid_interactive(chrom, pos_hg38, auto_mode=True)
+                else:
+                    rsid = find_rsid_interactive(chrom, pos_hg38, auto_mode=False)
+                    
+                    # Если пользователь вернул 'AUTO', переключаем режим для всех остальных
+                    if rsid == 'AUTO':
+                        print("\n⚡ Switching to AUTOMATIC mode for the rest of the SNPs...")
+                        auto_mode = True
+                        # Вызываем поиск еще раз уже в авто-режиме
+                        rsid = find_rsid_interactive(chrom, pos_hg38, auto_mode=True)
+                
                 df.at[i, 'rsID'] = rsid
                 processed_in_session += 1
                 
-                if rsid != '.':
-                    print(f"✅ Success: row {i} ({df.at[i, 'chr_position_hg38']}) -> {rsid}")
+                if rsid and rsid != '.':
+                    print(f"✅ Success: row {i} -> {rsid}")
 
                 if processed_in_session % checkpoint_interval == 0:
                     df.to_csv(checkpoint_file, sep='\t', index=False)
@@ -970,6 +1036,13 @@ def alternative(filepath, genome_build, skip_lines):
         bim_out = os.path.join(dir_name, f"{base_name}_plink_hg19_{start_idx}_{end_idx}.bim")
         create_bim_from_score(df, bim_out, genome_build or "hg19")
 
+        if os.path.exists(checkpoint_file):
+            try:
+                os.remove(checkpoint_file)
+                print(f"\n   🧹 Cleaned up temporary checkpoint: {os.path.basename(checkpoint_file)}")
+            except Exception as e:
+                pass
+
         print(f"\n🚀 PLINK command:")
         print(f"   plink --bfile your_data --score {score_out} 1 2 3 header")
     else:
@@ -980,13 +1053,22 @@ def alternative(filepath, genome_build, skip_lines):
 ###################################################################################
 
 def find_file(filename, search_path):
-    """Searches for a file on the computer."""
+    """Searches for a file on the computer. Supports extensionless input."""
     print(f"🔍 Searching for file '{filename}' in '{search_path}'...")
+    
+    # Расширения, которые мы будем проверять, если пользователь их не ввел
+    valid_extensions = ['.txt', '.csv', '.tsv']
+    search_names = [filename]
+    
+    if not any(filename.endswith(ext) for ext in valid_extensions):
+        search_names.extend([f"{filename}{ext}" for ext in valid_extensions])
+
     for root, dirs, files in os.walk(search_path):
-        if filename in files:
-            found_path = os.path.join(root, filename)
-            print(f"   ✅ Found: {found_path}")
-            return found_path
+        for name in search_names:
+            if name in files:
+                found_path = os.path.join(root, name)
+                print(f"   ✅ Found: {found_path}")
+                return found_path
     return None
 
 def process_table(filepath):
@@ -1033,73 +1115,78 @@ def process_table(filepath):
         score_out = os.path.join(dir_name, f"{base_name}_plink.txt")
         converted_df, full_df, build = convert_score_file(filepath, score_out)
 
-        bim_out = os.path.join(dir_name, f"{base_name}_plink.bim")
-        create_bim_from_score(full_df, bim_out, genome_build or "hg19")
-
         user_data_check = input("\n🔍 Do you have a user genotype file to calculate PGS? (y/n): ").strip().lower()
         if user_data_check == 'y':
-            user_path = input("   File path (.bim, .bed, or .vcf/.vcf.gz): ").strip()
             
-            if not os.path.exists(user_path):
-                print("❌ File not found!")
-                return
-
-            if user_path.endswith('.vcf') or user_path.endswith('.vcf.gz'):
-                if not PLINK_AVAILABLE:
-                    print("❌ PLINK is not installed. VCF conversion is impossible!")
-                    return
+            bim_out = os.path.join(dir_name, f"{base_name}_plink.bim")
+            create_bim_from_score(full_df, bim_out, genome_build or "hg19")
+            
+            user_data_check = input("\n🔍 Do you have a user genotype file to calculate PGS? (y/n): ").strip().lower()
+            if user_data_check == 'y':
+                user_path = input("   File path (.bim, .bed, or .vcf/.vcf.gz): ").strip()
                 
-                print("\n🔄 VCF file detected. Converting to PLINK binary format...")
-                bfile_prefix = user_path.replace('.vcf.gz', '').replace('.vcf', '')
-                vcf_cmd = [
-                    "plink", "--vcf", user_path, 
-                    "--make-bed", "--out", bfile_prefix,
-                    "--allow-extra-chr"
-                ]
-                try:
-                    subprocess.run(vcf_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    print(f"   ✅ VCF converted to: {bfile_prefix}.bed/bim/fam")
-                    user_bim_path = f"{bfile_prefix}.bim"
-                except subprocess.CalledProcessError:
-                    print("   ❌ VCF conversion error. Check PLINK installation.")
+                if not os.path.exists(user_path):
+                    print("❌ File not found!")
                     return
-            else:
-                user_bim_path = user_path.rsplit('.', 1)[0] + '.bim'
 
-            if os.path.exists(user_bim_path):
-                light_bim_report(user_bim_path)
-
-                full_qc = input("   Run QC check (and possible genome Liftover)? (y/n): ").strip().lower()
-                final_bim_path = user_bim_path
-                
-                if full_qc == 'y':
-                    final_bim_path = run_full_qc_report(score_out, user_bim_path, genome_build or "hg19")
+                if user_path.endswith('.vcf') or user_path.endswith('.vcf.gz'):
+                    if not PLINK_AVAILABLE:
+                        print("❌ PLINK is not installed. VCF conversion is impossible!")
+                        return
                     
-                calc_pgs = input(f"\n🚀 Calculate Polygenic Risk Score (PGS) based on {final_bim_path}? (y/n): ").strip().lower()
-                if calc_pgs == 'y':
-                    final_bfile = final_bim_path.rsplit('.bim', 1)[0]
-                    pgs_out = os.path.join(dir_name, f"{base_name}_PGS_results")
-                    
-                    pgs_cmd = [
-                        "plink",
-                        "--bfile", final_bfile,
-                        "--score", score_out, "1", "2", "3", "header",
-                        "--out", pgs_out
+                    print("\n🔄 VCF file detected. Converting to PLINK binary format...")
+                    bfile_prefix = user_path.replace('.vcf.gz', '').replace('.vcf', '')
+                    vcf_cmd = [
+                        "plink", "--vcf", user_path, 
+                        "--make-bed", "--out", bfile_prefix,
+                        "--allow-extra-chr"
                     ]
+                    try:
+                        subprocess.run(vcf_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        print(f"   ✅ VCF converted to: {bfile_prefix}.bed/bim/fam")
+                        user_bim_path = f"{bfile_prefix}.bim"
+                    except subprocess.CalledProcessError:
+                        print("   ❌ VCF conversion error. Check PLINK installation.")
+                        return
+                else:
+                    user_bim_path = user_path.rsplit('.', 1)[0] + '.bim'
+                
+                if os.path.exists(user_bim_path):
+                    light_bim_report(user_bim_path)
+
+                    full_qc = input("   Run QC check (and possible genome Liftover)? (y/n): ").strip().lower()
+                    final_bim_path = user_bim_path
                     
-                    print("\n🚀 FINAL PLINK COMMAND:")
-                    print(" ".join(pgs_cmd))
-                    
-                    if PLINK_AVAILABLE:
-                        print("\n⏳ Calculating PGS...")
-                        try:
-                            subprocess.run(pgs_cmd, check=True)
-                            print(f"✅ Done! Results saved to: {pgs_out}.profile")
-                        except subprocess.CalledProcessError:
-                            print("❌ Error calculating PGS. Check PLINK logs.")
-                    else:
-                        print("\n⚠️ PLINK is not installed! The script generated the command above.")
-                        print("   Copy and run it manually in the terminal/console once PLINK is installed.")
+                    if full_qc == 'y':
+                        final_bim_path = run_full_qc_report(score_out, user_bim_path, genome_build or "hg19")
+                        
+                    calc_pgs = input(f"\n🚀 Calculate Polygenic Risk Score (PGS) based on {final_bim_path}? (y/n): ").strip().lower()
+                    if calc_pgs == 'y':
+                        final_bfile = final_bim_path.rsplit('.bim', 1)[0]
+                        pgs_out = os.path.join(dir_name, f"{base_name}_PGS_results")
+                        
+                        pgs_cmd = [
+                            "plink",
+                            "--bfile", final_bfile,
+                            "--score", score_out, "1", "2", "3", "header",
+                            "--out", pgs_out
+                        ]
+                        
+                        print("\n🚀 FINAL PLINK COMMAND:")
+                        print(" ".join(pgs_cmd))
+                        
+                        if PLINK_AVAILABLE:
+                            print("\n⏳ Calculating PGS...")
+                            try:
+                                subprocess.run(pgs_cmd, check=True)
+                                print(f"✅ Done! Results saved to: {pgs_out}.profile")
+                            except subprocess.CalledProcessError:
+                                print("❌ Error calculating PGS. Check PLINK logs.")
+                        else:
+                            print("\n⚠️ PLINK is not installed! The script generated the command above.")
+                            print("   Copy and run it manually in the terminal/console once PLINK is installed.")
+        else:
+            print("✅ Skipping PGS calculation. Only score file was created.")
 
     else:
         print(f"\n⚠️  rsID not found in the first 10 rows")
@@ -1161,17 +1248,13 @@ def main():
         except:
             pass
 
-        max_input = input(f"🔢 How many rows to process? (Enter = all): ").strip()
-        if max_input.isdigit():
-            MAX_ROWS = int(max_input)
-        else:
-            MAX_ROWS = None  # All rows
-
         process_table(found_filepath)
-    else:
-        print(f"\n❌ File '{target_filename}' not found!")
 
 if __name__ == "__main__":
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
+    
     try:
         main()
     except Exception as e:

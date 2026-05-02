@@ -135,12 +135,12 @@ def enrich_file(input_path: str, output_path: str, checkpoint_path: str, id_colu
     if id_column not in df.columns:
         guessed = pick_col(df, [id_column, "rsid", "riskAllele", "SNPS", "variantId"])
         if not guessed:
-            raise ValueError(f"Не нашла колонку с ID: {id_column}. Доступные колонки: {', '.join(map(str, df.columns))}")
+            raise ValueError(f"Didn't find ID column: {id_column}. Avaliable columns: {', '.join(map(str, df.columns))}")
         id_column = guessed
     df["rsid"] = df[id_column].apply(extract_rsid)
     work = df[df["rsid"].notna()].copy()
     if work.empty:
-        raise ValueError("Не найдено ни одного rsID во входной таблице.")
+        raise ValueError("Didn't find rsID in the table.")
     unique_ids = work["rsid"].drop_duplicates().tolist()
 
     cp = load_checkpoint(chk)
@@ -209,7 +209,7 @@ if TK_AVAILABLE:
             frame = ttk.Frame(self)
             frame.pack(fill="both", expand=True)
             pad = {"padx": 10, "pady": 6}
-            header = "Загрузка данных из NCBI по rsID с докачкой.\nЗаполните поля ниже, затем нажмите Start / Resume download."
+            header = "Uploading data from NCBI.\nFill in the fields below, then click Start / Resume download."
             ttk.Label(frame, text=header, justify="left").grid(row=0, column=0, columnspan=3, sticky="w", padx=10, pady=10)
             ttk.Label(frame, text="Input GWAS/PGS file").grid(row=1, column=0, sticky="w", **pad)
             self.input_var = tk.StringVar()
@@ -253,13 +253,13 @@ if TK_AVAILABLE:
 
         def show_help(self):
             message = (
-                "Что писать в поля:\n\n"
-                "1. Input GWAS/PGS file — путь к вашему входному файлу .tsv, .csv или .xlsx.\n"
-                "2. Output Excel (.xlsx) — куда сохранить итоговую Excel-таблицу.\n"
-                "3. Resume checkpoint (.json) — файл состояния для докачки.\n"
-                "4. Column with rsID or variant text — обычно rsid, riskAllele, SNPS или variantId.\n"
-                "5. NCBI email (recommended) — ваш email для Entrez.\n"
-                "6. NCBI API key (optional) — ключ NCBI, если он у вас есть."
+                "What to write in the fields:\n\n"
+                "1. Input GWAS/PGS file — the path to your input .tsv, .csv, or .xlsx file.\n"
+                "2. Output Excel (.xlsx) — where to save the resulting Excel spreadsheet.\n"
+                "3. Resume checkpoint (.json) — a status file for resuming downloads.\n"
+                "4. Column with rsID or variant text — usually rsid, riskAllele, SNPS, or variantId.\n"
+                "5. NCBI email (recommended) — your email address for Entrez.\n"
+                "6. NCBI API key (optional) — your NCBI API key, if you have one."
             )
             messagebox.showinfo("How to fill the form", message)
 

@@ -19,7 +19,7 @@ The repository is structured as a modular package containing several dedicated t
 - **VCF handling:** Converts patient `.vcf/.vcf.gz` files into PLINK binary format (`.bed/.bim/.fam`).
 - **Automated liftover:** Safely converts genome builds (e.g. hg38 ↔ hg19) using temporary internal IDs to avoid PLINK exclusion artefacts.
 - **Risk calculation:** Runs PLINK under the hood to compute final risk scores for each sample.
-- **Interfaces:** core logic in Python, with a CLI entry point and a simple GUI wrapper (work in progress 🚧).
+- **Interfaces:** core logic in Python, with a CLI entry point and a simple GUI wrapper (work in progress).
 
 ### 🚧 2. VCF Parser (`parser`) — *work in progress*
 

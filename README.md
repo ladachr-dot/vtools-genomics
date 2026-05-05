@@ -5,7 +5,7 @@
 
 A collection of Python utilities designed to streamline and automate routine genomic data processing workflows. 
 
-This toolkit bridges the gap between raw genomic data and analytical tools like PLINK, handling everything from missing rsID recovery via NCBI APIs, safe genome-build liftover, and synthetic dataset generation for testing.
+This toolkit bridges the gap between raw genomic data and analytical tools like PLINK, handling everything from missing rsID recovery via NCBI APIs, safe genome-build liftover.
 
 ## 🛠️ The Utilities
 
@@ -49,15 +49,7 @@ Typical usage patterns:
 - downloading FASTA/GenBank records for a list of accessions;
 - building small local datasets for downstream analysis.
 
-### 🚧 4. Synthetic Data Generator (`generator`) — *work in progress*
-
-A factory‑pattern module for generating synthetic genomics datasets for development and testing.
-
-Planned features:
-
-- synthetic VCF files with configurable variant density and error rates;
-- small `.bed/.bim/.fam` trios for PLINK pipelines;
-- pre‑packaged toy datasets for unit tests and examples.
+### 🚧 *work in progress*
 
 ## 🏗️ Project Architecture
 
@@ -71,7 +63,7 @@ vtools-genomics/
 │       ├── pgstoplink.py      # PGS Converter module
 │       ├── parser.py          # VCF Parser module
 │       ├── downloader.py      # Entrez Downloader module
-│       ├── generator.py       # Synthetic Data module
+│       ├── ... there may be other tools ...
 │       └── utils/             # Shared helpers (loggers, validators)
 ├── data/                      # Dummy/test datasets
 ├── tests/                     # Unit tests

@@ -21,17 +21,7 @@ The repository is structured as a modular package containing several dedicated t
 - **Risk calculation:** Runs PLINK under the hood to compute final risk scores for each sample.
 - **Interfaces:** core logic in Python, with a CLI entry point and a simple GUI wrapper (work in progress).
 
-### 🚧 2. VCF Parser (`parser`) — *work in progress*
-
-A multiprocessing‑enabled parser for heavy VCF files, aimed at extracting and filtering specific genomic regions or variant types without loading entire files into RAM.
-
-Planned features:
-
-- filtering by gene, region, or variant type;
-- per‑chromosome parallel processing;
-- export to tidy CSV/TSV or BED‑like intervals.
-
-### ✅ 3. NCBI Batch Downloader (`ncbi_downloader`)
+### ✅ 2. NCBI Batch Downloader (`ncbi_downloader`)
 
 A resilient batch downloader for NCBI Entrez resources, designed to handle large ID lists without breaking on rate limits or network hiccups.
 
@@ -48,6 +38,25 @@ Typical usage patterns:
 - recovering missing rsIDs or annotations for GWAS/PGS workflows;
 - downloading FASTA/GenBank records for a list of accessions;
 - building small local datasets for downstream analysis.
+
+### ✅ 3. ISOGG ↔ YFull Haplogroup Converter (`phylo_resolve`)
+
+A bidirectional converter and SNP resolver for Y-DNA haplogroup nomenclature, bridging the ISOGG alphanumeric system and the YFull SNP-based notation.
+
+Current features:
+
+- live SNP index built from `current_tree.json`, cached in SQLite — no re-parsing on subsequent runs;
+- auto-detects input notation: ISOGG (`R1b1a1`) vs. YFull (`R-M269`);
+- three-level search: exact → `LIKE` → fuzzy difflib, with haplogroup queries falling back through parent nodes;
+- converts ISOGG SNP Index workbooks to Excel with added YFull columns, auto-sized columns, and frozen header;
+- detailed per-row status codes for auditability (`matched_by_name_snp`, `ambiguous_multiple_yfull_matches`, …);
+- desktop GUI with progress bar + CLI entry point.
+
+Typical usage patterns:
+
+- annotating cohorts with standardised YFull labels for population stratification;
+- cross-referencing ISOGG SNP Index entries against the live YFull tree to spot reclassified haplogroups;
+- batch-converting legacy haplogroup columns from ISOGG to YFull notation (or vice versa).
 
 ### 🚧 *work in progress*
 

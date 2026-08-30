@@ -1,6 +1,6 @@
 # PhyloResolve
 
-**PhyloResolve** is a bidirectional ISOGG ↔ YFull haplogroup converter with a live SNP index, SQLite caching, and a desktop GUI. It resolves Y-DNA haplogroup labels and SNP markers to their position in the YFull phylogenetic tree and vice versa.
+**PhyloResolve** is a bidirectional ISOGG ↔ YFull haplogroup converter with a live SNP index, SQLite caching. It resolves Y-DNA haplogroup labels and SNP markers to their position in the YFull phylogenetic tree and vice versa.
 
 ---
 
@@ -15,7 +15,6 @@
 - **Static fallback dictionary** (~300 entries) for top-level nodes (`R`, `I`, `J`, …) not covered by SNP markers
 - **Detailed output statuses**: `matched_by_name_snp`, `matched_by_alternate_snp`, `ambiguous_multiple_yfull_matches`, `not_found_in_yfull_tree`, `missing_snp`
 - **Excel output**: auto-sized columns + frozen header row (`freeze_panes`)
-- **Desktop GUI** with a progress bar for both JSON import and file conversion
 - **CLI mode** for scripted/batch use
 
 ---
@@ -39,14 +38,6 @@ pip install requests pandas openpyxl
 ---
 
 ## Quick Start
-
-### GUI
-
-```bash
-python phylo_resolve_en.py
-```
-
-On first launch with an empty database the app automatically downloads the YFull tree from GitHub and imports it. This takes 10–60 seconds depending on connection speed.
 
 ### CLI
 

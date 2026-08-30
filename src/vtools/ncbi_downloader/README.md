@@ -7,7 +7,6 @@ This module provides a resilient way to download records from NCBI (e.g. GWAS Ca
 - Batch downloads of sequences or annotations by a list of accession IDs or rsIDs
 - Automatic retry and backoff when NCBI rate limits or network errors occur
 - Checkpoints: if the run is interrupted, the tool resumes from the last processed ID
-- Unified CLI and (optional) GUI interface for non-technical users
 
 ### Command-line usage
 

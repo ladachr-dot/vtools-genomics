@@ -9,21 +9,21 @@ All three tools are available both as a unified `vtools` command-line interface 
 
 ## 🛠️ The Utilities
 
-### 1. PGS → PLINK Converter (`vtools pgs-convert`)
+### 1. PGS → PLINK Converter (`vtools pgstoplink`)
 
 - Parses PGS Catalog-style score files (`.txt/.tsv/.csv`, tab- or whitespace-separated) and normalizes them into a PLINK-ready `SNP / A1 / BETA` format.
 - Recovers missing rsIDs based on `CHR:POS` via the NCBI Variation/Entrez APIs, with resumable checkpoints for long-running batches.
 - Converts genome-build coordinates (hg19 ↔ hg38) via `pyliftover`.
 - Optionally generates a matching `.bim` file and prints a ready-to-run PLINK scoring command.
 
-### 2. NCBI Batch Downloader (`vtools ncbi-download`)
+### 2. NCBI Batch Downloader (`vtools downloader`)
 
 - Extracts rsIDs from a TSV/CSV/XLSX table and enriches them with NCBI `esummary` metadata (chromosome, position, gene).
 - Automatic retry/backoff on NCBI rate limits and transient network errors (via `urllib3.Retry`).
 - JSON-based checkpoints to resume interrupted runs without starting from scratch.
 - Incremental Excel output, saved every N processed IDs so partial progress is never lost.
 
-### 3. ISOGG ↔ YFull Haplogroup Converter (`vtools haplo-convert`)
+### 3. ISOGG ↔ YFull Haplogroup Converter (`vtools converter`)
 
 - SNP index built from the public YFull `current_tree.json`, cached in SQLite so it isn't re-parsed on every run.
 - Case-insensitive ISOGG ↔ YFull lookup with automatic fallback to the nearest parent haplogroup when an exact label isn't found.

@@ -216,3 +216,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- vtools-genomics specific ---
+# Runtime checkpoints produced by pgs_to_plink / ncbi_downloader while running
+*_checkpoint_*.csv
+*.checkpoint.json
+
+# SQLite cache built by haplo_converter at runtime
+haplo_pro.db
+current_tree.json
+
+# Generated output files (kept out of the repo; regenerate by running the tools)
+*_plink.txt
+*_plink_hg19_*.txt
+*_ncbi.xlsx
+*_converted.csv
+*.bim

@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vtools-genomics"
+version = "0.1.0"
+description = "Genomic data processing utilities: PGS to PLINK conversion, NCBI batch downloading, ISOGG/YFull haplogroup conversion."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = [
+    "biopython>=1.83",
+    "requests>=2.31",
+    "click>=8.1",
+    "pandas>=2.0",
+    "pyliftover>=0.4",
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+vtools = "vtools.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
